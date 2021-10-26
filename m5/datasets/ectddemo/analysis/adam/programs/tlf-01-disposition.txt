@@ -1,0 +1,132 @@
+# Note to Reviewer
+# To rerun the code below, please refer to the ADRG appendix.
+# After the required packages are installed,
+# the path variable needs to be defined by using the example code below.
+#
+# path = list(adam = "/path/to/esub/analysis/adam/datasets") # Modify to use actual location
+# path$outtable = path$outgraph = "." # Outputs saved to the current folder
+
+
+## ---- message = FALSE--------------------------------------------------------------------------------------------------
+devtools::load_all()
+library(haven) # Read SAS data
+library(dplyr) # Manipulate data
+library(tidyr) # Manipulate data
+library(r2rtf) # Reporting in RTF format
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+adsl <- read_sas("adam_data/adsl.sas7bdat")
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+adsl %>%
+  select(USUBJID, TRT01P, TRT01PN, DISCONFL, DCREASCD) %>%
+  head(4)
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+n_rand <- adsl %>%
+  group_by(TRT01PN) %>%
+  summarize(n = n()) %>%
+  pivot_wider(
+    names_from = TRT01PN,
+    names_prefix = "n_",
+    values_from = n
+  ) %>%
+  mutate(row = "Patients in population")
+n_rand
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+n_disc <- adsl %>%
+  group_by(TRT01PN) %>%
+  summarize(
+    n = sum(DISCONFL == "Y"),
+    pct = formatC(n / n() * 100,
+      digits = 1, format = "f", width = 5
+    )
+  ) %>%
+  pivot_wider(
+    names_from = TRT01PN,
+    values_from = c(n, pct)
+  ) %>%
+  mutate(row = "Discontinued")
+
+n_disc
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+n_reason <- adsl %>%
+  group_by(TRT01PN) %>%
+  mutate(n_total = n()) %>%
+  group_by(TRT01PN, DCREASCD) %>%
+  summarize(
+    n = n(),
+    pct = formatC(n / unique(n_total) * 100,
+      digits = 1, format = "f", width = 5
+    )
+  ) %>%
+  pivot_wider(
+    id_cols = DCREASCD,
+    names_from = TRT01PN,
+    values_from = c(n, pct),
+    values_fill = list(n = 0, pct = "  0.0")
+  ) %>%
+  rename(row = DCREASCD)
+
+n_reason
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+n_complete <- n_reason %>% filter(row == "Completed")
+
+n_complete
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+n_reason <- n_reason %>%
+  filter(row != "Completed") %>%
+  mutate(row = paste0("    ", row))
+
+n_reason
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+tbl_disp <- bind_rows(n_rand, n_complete, n_disc, n_reason) %>%
+  select(row, ends_with(c("_0", "_54", "_81")))
+
+tbl_disp
+
+
+## ----------------------------------------------------------------------------------------------------------------------
+tbl_disp %>%
+  
+  # Table title
+  rtf_title("Disposition of Patients") %>%
+  
+  # First row of column header
+  rtf_colheader(" | Placebo | Xanomeline Low Dose| Xanomeline High Dose",
+    col_rel_width = c(3, rep(2, 3))
+  ) %>%
+  
+  # Second row of column header
+  rtf_colheader(" | n | (%) | n | (%) | n | (%)",
+    col_rel_width = c(3, rep(c(0.7, 1.3), 3)),
+    border_top = c("", rep("single", 6)),
+    border_left = c("single", rep(c("single", ""), 3))
+  ) %>%
+  
+  # Table body
+  rtf_body(
+    col_rel_width = c(3, rep(c(0.7, 1.3), 3)),
+    text_justification = c("l", rep("c", 6)),
+    border_left = c("single", rep(c("single", ""), 3))
+  ) %>%
+  
+  # Encoding RTF syntax
+  rtf_encode() %>%
+  
+  # Save to a file
+  write_rtf("tlf/tbl_disp.rtf")
+
