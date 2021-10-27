@@ -6,8 +6,7 @@
 # path = list(adam = "/path/to/esub/analysis/adam/datasets") # Modify to use actual location
 # path$outtable = path$outgraph = "." # Outputs saved to the current folder
 
-
-## ---- message = FALSE--------------------------------------------------------------------------------------------------
+## ---- message = FALSE---------------------------------------------------------
 devtools::load_all()
 library(haven) # Read SAS data
 library(dplyr) # Manipulate data
@@ -16,12 +15,12 @@ library(r2rtf) # Reporting in RTF format
 library(tools)
 
 
-## ----------------------------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 adsl <- read_sas("adam_data/adsl.sas7bdat")
 adae <- read_sas("adam_data/adae.sas7bdat")
 
 
-## ----------------------------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ana <- adae %>% 
   mutate(AESOC = toTitleCase(tolower(AESOC)), 
          AEDECOD =  toTitleCase(tolower(AEDECOD)))
@@ -34,7 +33,7 @@ t1 <-ana %>%
 t1 %>% head(4)
 
 
-## ----------------------------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 t2 <- ana %>% 
   group_by(TRTAN, AESOC, AEDECOD) %>%
   summarise(n = fmt_num(n_distinct(USUBJID), digits = 0)) %>%
@@ -43,7 +42,7 @@ t2 <- ana %>%
 t2 %>% head(4)
 
 
-## ----------------------------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 t_ae <- bind_rows(t1, t2) %>% 
         pivot_wider(id_cols = c(AESOC, order, AEDECOD), 
                     names_from = TRTAN, 
@@ -56,7 +55,7 @@ t_ae <- bind_rows(t1, t2) %>%
 t_ae %>% head(4)
 
 
-## ----------------------------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 t_pop <- adsl %>%
   filter(SAFFL == "Y") %>%
   count_by("TRT01AN", "SAFFL",
@@ -70,7 +69,7 @@ t_pop <- adsl %>%
 t_pop
 
 
-## ----------------------------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 tbl_ae_spec <- bind_rows(t_pop,
                          data.frame(AESOC = "pop"), 
                          t_ae) %>% 
@@ -80,7 +79,7 @@ tbl_ae_spec <- bind_rows(t_pop,
 tbl_ae_spec %>% head(4)
 
 
-## ----------------------------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 n_row <- nrow(tbl_ae_spec)
 n_col <- ncol(tbl_ae_spec)
 id <- tbl_ae_spec$AESOC == tbl_ae_spec$AEDECOD
@@ -89,10 +88,10 @@ id <- ifelse(is.na(id), FALSE, id)
 text_format   <- ifelse(id, "b", "")
 
 
-## ----------------------------------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 tbl_ae_spec %>% 
   rtf_title("Analysis of Participants With Specific Adverse Events", 
-            "(Safty Analysis Population)") %>%
+            "(Safety Analysis Population)") %>%
   
     rtf_colheader(" | Placebo | Xanomeline Low Dose| Xanomeline High Dose",
     col_rel_width = c(3, rep(1, 3))
