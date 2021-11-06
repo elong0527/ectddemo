@@ -6,7 +6,7 @@
 # path = list(adam = "/path/to/esub/analysis/adam/datasets") # Modify to use actual location
 # path$outtable = path$outgraph = "." # Outputs saved to the current folder
 
-## ---- message = FALSE---------------------------------------------------------
+## ---- message = FALSE--------------------------------------------------------------------------------------------------
 devtools::load_all()
 library(haven) # Read SAS data
 library(dplyr) # Manipulate data
@@ -14,17 +14,17 @@ library(tidyr) # Manipulate data
 library(r2rtf) # Reporting in RTF format
 
 
-## -----------------------------------------------------------------------------
-adsl <- read_sas("adam_data/adsl.sas7bdat")
+## ----------------------------------------------------------------------------------------------------------------------
+adsl <- read_sas("data-adam/adsl.sas7bdat")
 
 
-## -----------------------------------------------------------------------------
+## ----------------------------------------------------------------------------------------------------------------------
 adsl %>%
   select(USUBJID, ITTFL, EFFFL, SAFFL) %>%
   head(4)
 
 
-## -----------------------------------------------------------------------------
+## ----------------------------------------------------------------------------------------------------------------------
 # Derive a randomization flag
 adsl <- adsl %>% mutate(RANDFL = "Y")
 
@@ -33,7 +33,7 @@ pop <- count_by(adsl, "TRT01PN", "RANDFL",
   select(var_label, starts_with("n_"))
 
 
-## -----------------------------------------------------------------------------
+## ----------------------------------------------------------------------------------------------------------------------
 pop1 <- bind_rows(
   count_by(adsl, "TRT01PN", "ITTFL",
     var_label = "Participants included in ITT population"
@@ -49,14 +49,14 @@ pop1 <- bind_rows(
   select(var_label, starts_with("npct_"))
 
 
-## -----------------------------------------------------------------------------
+## ----------------------------------------------------------------------------------------------------------------------
 names(pop) <- gsub("n_", "npct_", names(pop))
 tbl_pop <- bind_rows(pop, pop1)
 
 tbl_pop %>% select(var_label, npct_0)
 
 
-## -----------------------------------------------------------------------------
+## ----------------------------------------------------------------------------------------------------------------------
 rel_width <- c(2, rep(1, 3))
 colheader <- " | Placebo | Xanomeline line Low Dose| Xanomeline line High Dose"
 tbl_pop %>%
